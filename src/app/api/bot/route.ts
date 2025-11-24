@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { decideCreateNode } from './bot';
 
 // Global storage (in production, you'd use a database)
 let Messages: Message[] = [];
@@ -43,19 +44,21 @@ class ChatMessage implements Message {
   }
 }
 
-function createNode(message: string): { create: string; title: string | null } {
-  if (message === "0") {
-    return { create: 'no', title: null };
-  } else {
+async function createNode(message: string): Promise<{ create: string; title: string | null }> {
+  try {
+    const res = await decideCreateNode(message, Nodes);
+    return { create: res.create ?? 'no', title: res.title ?? null };
+  } catch (err) {
+    if (message === '0') return { create: 'no', title: null };
     return { create: 'yes', title: 'new node' };
   }
 }
 
-function addMessageToTree(
-  messageContent: string, 
-  role: string, 
+async function addMessageToTree(
+  messageContent: string,
+  role: string,
   nodeId?: number
-): { success: boolean; messageId: number; nodeId: number; error?: string } {
+): Promise<{ success: boolean; messageId: number; nodeId: number; error?: string }> {
   try {
     const messageId = Messages.length + 1;
     let currNode: Node;
@@ -78,7 +81,7 @@ function addMessageToTree(
       }
     }
 
-    const { create, title } = createNode(messageContent);
+    const { create, title } = await createNode(messageContent);
     const newMessage = new ChatMessage(messageId, messageContent, role);
     Messages.push(newMessage);
 
@@ -149,7 +152,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = addMessageToTree(message, role, nodeId);
+    const result = await addMessageToTree(message, role, nodeId);
     
     if (result.success) {
       return NextResponse.json({
