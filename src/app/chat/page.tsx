@@ -1,8 +1,18 @@
+'use client';
+
 import React from 'react'
 import InputBox from '@/app/components/InputBox'
 import MessageSection from '@/app/components/MessageSection'
+import { useState, useEffect } from 'react'
+
+interface Message {
+  id: number;
+  role: string;
+  content: string;
+}
+
 const ChatPage = () => {
-  const curr_messages = [
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
       role: 'bot',
@@ -18,7 +28,23 @@ const ChatPage = () => {
       role: 'bot',
       content: 'its paris'
     },
-    ]
+  ]);
+  useEffect(() => {
+    messages.map(msg => {
+      console.log(msg);
+    })
+  }, [messages]);
+  const handleSendMessage = (content: string) => {
+    if (!content.trim()) return;
+    
+    const newMessage: Message = {
+      id: messages.length + 1,
+      role: 'user',
+      content: content
+    };
+    
+    setMessages([...messages, newMessage]);
+  }
   return (
     <div className="flex flex-row bg-[#252526] items-center justify-center overflow-hidden">
       {/* Chat Container*/}
@@ -29,12 +55,12 @@ const ChatPage = () => {
           
           {/* Message space */}
           <div className="flex-1 overflow-y-auto text-[#e3e3e3] flex flex-col-reverse">
-            <MessageSection messages={curr_messages} />
+            <MessageSection messages={messages} />
           </div>
           
           {/* Input at bottom */}
           <div>
-            <InputBox/>
+            <InputBox onSendMessage={handleSendMessage} />
           </div>
         </div>
 
