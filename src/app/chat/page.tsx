@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react'
-import InputBox from '@/app/components/InputBox'
-import MessageSection from '@/app/components/MessageSection'
+import InputBox from '@/components/InputBox'
+import MessageSection from '@/components/MessageSection'
 import { useState, useEffect } from 'react'
 
 interface Message {
@@ -96,7 +96,7 @@ const ChatPage = () => {
           </div>
           
           {/* Input at bottom */}
-          <div>
+          <div className='flex justify-center items-center'>
             <InputBox onSendMessage={handleSendMessage} />
           </div>
         </div>
