@@ -3,17 +3,41 @@ type Props = {
   id: number;
   role: string;
   content: string;
+  files?: { name: string; type: string; size: number }[];
 }
-const MessageBox = ({id, role, content} : Props) => {
-  const containerStyle = (role == 'bot') ? 'text-center p-4' : 'text-right p-4 bg-[#282a2c]';
-  const bubbleStyle = `
-    inline-block p-3 rounded-lg max-w-[70%]
-    `;
+const MessageBox = ({id, role, content, files} : Props) => {
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   return (
-    <div key={id} className={containerStyle}>
-      <div className={bubbleStyle}>
-        {content}
-      </div>
+    <div className='text-lg'>
+      {role === 'user' ? (
+        <div className="flex justify-end m-2">
+          <div className="bg-[#292a2c] text-white p-4 rounded-l-2xl max-w-xs wrap-break-word rounded-tr-2xl">
+            {content}
+            {files && files.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {files.map((file, index) => (
+                  <div key={index} className="text-xs bg-gray-700 p-2 rounded flex items-center gap-2">
+                    <span>📎</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{file.name}</div>
+                      <div className="text-gray-400">{formatFileSize(file.size)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-start m-2">
+          <div className="text-white p-4 rounded-lg max-w-max wrap-break-word">{content}</div>
+        </div>
+      )}
     </div>
   )
 }
