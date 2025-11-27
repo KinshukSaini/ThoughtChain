@@ -86,7 +86,7 @@ const ChatPage = () => {
     <div className="flex flex-row bg-[#252526] h-screen overflow-hidden">
       {/* Chat Container*/}
       
-        <div className='rounded-3xl overflow-hidden bg-[#131314] flex flex-col px-32' style={{ width: `${chatWidth}%` }}>
+        <div className='rounded-3xl overflow-hidden bg-[#131314] flex flex-col px-12' style={{ width: `${chatWidth}%` }}>
           {/* Header */}
           <div className='text-left text-3xl font-semibold bg-[#181819] p-5 bg-linear-to-r from-[#b86192] to-[#992366] bg-clip-text text-transparent'> ThoughtChain </div>
           
