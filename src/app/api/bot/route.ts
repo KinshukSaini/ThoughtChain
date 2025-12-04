@@ -120,12 +120,85 @@ function getTreeVisualization() {
   }));
 }
 
-// GET - Retrieve the current tree structure
-export async function GET() {
+// Helper function to find a node by ID
+function findNodeById(nodeId: number, searchNodes: Node[] = Nodes): Node | null {
+  for (const node of searchNodes) {
+    if (node.id === nodeId) return node;
+    const found = findNodeById(nodeId, node.Children);
+    if (found) return found;
+  }
+  return null;
+}
+
+// Get path from root to a specific node
+function getPathToNode(targetNodeId: number): Node[] | null {
+  // Build parent map
+  const parentMap = new Map<number, number>();
+  
+  function buildParentMap(nodes: Node[], parentId: number | null = null) {
+    for (const node of nodes) {
+      if (parentId !== null) {
+        parentMap.set(node.id, parentId);
+      }
+      buildParentMap(node.Children, node.id);
+    }
+  }
+  
+  buildParentMap(Nodes);
+  
+  // Check if target node exists
+  const targetNode = findNodeById(targetNodeId);
+  if (!targetNode) return null;
+  
+  // Build path from target to root
+  const path: Node[] = [];
+  let currentId: number | undefined = targetNodeId;
+  
+  while (currentId !== undefined) {
+    const node = findNodeById(currentId);
+    if (!node) break;
+    path.unshift(node); // Add to beginning
+    currentId = parentMap.get(currentId);
+  }
+  
+  return path.length > 0 ? path : null;
+}
+
+// GET - Retrieve the current tree structure or path to a specific node
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const pathNodeId = searchParams.get('pathTo');
+    
+    // If pathTo parameter is provided, return path to that node
+    if (pathNodeId) {
+      const nodeId = parseInt(pathNodeId);
+      const path = getPathToNode(nodeId);
+      
+      if (!path) {
+        return NextResponse.json(
+          { success: false, error: 'Node not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({
+        success: true,
+        path: path.map(node => ({
+          nodeId: node.id,
+          title: node.title,
+          messages: node.NodeMessages.map(msg => ({
+            messageId: msg.id,
+            role: msg.role,
+            content: msg.content
+          }))
+        }))
+      });
+    }
+    
+    // Default: return full tree
     const treeData = getTreeVisualization();
     return NextResponse.json({
-        
       success: true,
       nodes: treeData,
       totalMessages: Messages.length,

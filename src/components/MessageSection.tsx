@@ -13,7 +13,7 @@ type Props = {
 
 const MessageSection = ({messages} : Props) => {
   return (
-    <div className='flex-col-reverse'>
+    <div className='flex flex-col'>
         {messages.map(msg => {
             return <MessageBox key={msg.id} id={msg.id} role={msg.role} content={msg.content} files={msg.files} />
         })}

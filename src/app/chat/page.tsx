@@ -4,6 +4,7 @@ import React from 'react'
 import InputBox from '@/components/InputBox'
 import MessageSection from '@/components/MessageSection'
 import { useState, useEffect } from 'react'
+import TreeFlow from '@/components/TreeFlow';
 
 interface Message {
   id: number;
@@ -20,16 +21,7 @@ const ChatPage = () => {
       role: 'bot',
       content: 'Hi, how can i help you today?'
     },
-    {
-      id: 2,
-      role: 'user',
-      content: 'What is the capital of France?'
-    },
-    {
-      id: 3,
-      role: 'bot',
-      content: 'its paris'
-    },
+
   ]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -111,6 +103,7 @@ const ChatPage = () => {
 
       {/* mind map - graph */}
       <div className='flex-1 h-screen bg-[#252526]'>
+        <TreeFlow />  
       </div>
     </div>
   )
