@@ -3,17 +3,74 @@ import React, { useCallback, useRef, useEffect, useState } from "react";
 import { Background, ReactFlow, useEdgesState, addEdge, applyNodeChanges, ReactFlowProvider, Position } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-let id = 1;
-const getId = () => id++;
-
 const TreeFlow = () => {
   const rf = useRef<any>(null);
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
-  const [currNode, setCurrNode] = useState<number | null>(null);
 
   const onNodesChange = useCallback((c: any) => setNodes((n) => applyNodeChanges(c, n)), []);
-  const onConnect = useCallback((p: any) => setEdges((e: any) => addEdge(p, e)), [setEdges]);
+
+  // Fetch tree data from API
+  const fetchTree = useCallback(async () => {
+    try {
+      const response = await fetch('/api/bot');
+      const data = await response.json();
+      
+      if (data.success && data.nodes) {
+        console.log('[TreeFlow] Fetched nodes:', data.nodes);
+        
+        // Convert API nodes to ReactFlow nodes
+        const flowNodes = data.nodes.map((node: any) => ({
+          id: String(node.nodeId),
+          data: { label: node.title || `Node ${node.nodeId}` },
+          position: { x: 0, y: 0 },
+          sourcePosition: Position.Bottom,
+          targetPosition: Position.Top,
+          style: {
+            background: '#2d2d2d',
+            color: '#fff',
+            border: '1px solid #555',
+            borderRadius: '8px',
+            padding: '10px',
+            fontSize: '12px',
+          }
+        }));
+
+        // Convert API children relationships to ReactFlow edges
+        const flowEdges: any[] = [];
+        data.nodes.forEach((node: any) => {
+          if (node.childrenIds && node.childrenIds.length > 0) {
+            node.childrenIds.forEach((childId: number) => {
+              flowEdges.push({
+                id: `${node.nodeId}-${childId}`,
+                source: String(node.nodeId),
+                target: String(childId),
+                style: { stroke: '#666' }
+              });
+            });
+          }
+        });
+
+        setNodes(flowNodes);
+        setEdges(flowEdges);
+      }
+    } catch (error) {
+      console.error('[TreeFlow] Failed to fetch tree:', error);
+    }
+  }, [setEdges]);
+
+  // Fetch tree on mount only - no polling
+  useEffect(() => {
+    fetchTree();
+  }, [fetchTree]);
+  
+  // Expose refresh function to window for manual triggering
+  useEffect(() => {
+    (window as any).refreshTree = fetchTree;
+    return () => {
+      delete (window as any).refreshTree;
+    };
+  }, [fetchTree]);
 
   const layoutTree = useCallback(() => {
     if (!nodes.length) return;
@@ -44,36 +101,30 @@ const TreeFlow = () => {
   useEffect(() => { const t = setTimeout(layoutTree, 0); return () => clearTimeout(t); }, [nodes.length, edges.length, layoutTree]);
   useEffect(() => { if (rf.current && nodes.length) setTimeout(() => rf.current?.fitView?.({ padding: 0.15 }), 50); }, [nodes.length]);
 
-  const addNode = useCallback((label = "New Node") => {
-    const nid = getId();
-    setNodes((n) => [...n, { id: String(nid), data: { label }, position: { x: 0, y: 0 }, sourcePosition: Position.Bottom, targetPosition: Position.Top }]);
-    return nid;
+  // Handle node click - emit event to scroll to node in chat
+  const handleNodeClick = useCallback((_: any, node: any) => {
+    const nodeId = Number(node.id);
+    console.log('[TreeFlow] Node clicked:', nodeId);
+    
+    // Dispatch custom event that chat page can listen to
+    const event = new CustomEvent('scrollToNode', { detail: { nodeId } });
+    window.dispatchEvent(event);
   }, []);
-
-  const addChild = useCallback((pid: number, label: string) => {
-    const nid = addNode(label);
-    setEdges((e: any) => [...e, { id: `${pid}-${nid}`, source: String(pid), target: String(nid) }]);
-    setCurrNode(nid);
-  }, [addNode, setEdges]);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const d = new FormData(e.currentTarget), title = (d.get("title") as string) || "New Node";
-    if (d.get("make_node") === "yes") currNode !== null ? addChild(currNode, title) : setCurrNode(addNode(title));
-    e.currentTarget.reset();
-  };
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative", background: "#1a1a1a" }}>
-      <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect}
-        onInit={(i) => { rf.current = i; }} onNodeClick={(_, n) => setCurrNode(Number(n.id))} style={{ width: "100%", height: "100%", background: "#1a1a1a" }}>
+      <ReactFlow 
+        nodes={nodes} 
+        edges={edges} 
+        onNodesChange={onNodesChange} 
+        onEdgesChange={onEdgesChange}
+        onNodeClick={handleNodeClick}
+        onInit={(i) => { rf.current = i; }} 
+        style={{ width: "100%", height: "100%", background: "#1a1a1a" }}
+        fitView
+      >
         <Background color="#444" gap={16} />
       </ReactFlow>
-      <form onSubmit={handleSubmit} style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.7)", color: "#fff", padding: 8, zIndex: 100 }}>
-        <div>create node <label><input type="radio" name="make_node" value="yes" /> yes</label> <label><input type="radio" name="make_node" value="no" defaultChecked /> no</label></div>
-        <div style={{ marginTop: 8 }}><label>title <input name="title" type="text" /></label></div>
-        <div style={{ marginTop: 8 }}><input type="submit" value="enter" /></div>
-      </form>
     </div>
   );
 };

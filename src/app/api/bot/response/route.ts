@@ -3,9 +3,7 @@ import { generateResponse } from "../bot";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("[API] Received POST request to /api/bot/response");
     const body = await req.json();
-    console.log("[API] Request body:", { input: body.input, messageCount: body.messages?.length });
     const { input, messages } = body;
 
     if (!input || !messages) {
@@ -16,10 +14,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("[API] Calling generateResponse...");
     const response = await generateResponse(input, messages);
-    console.log("[API] Response generated:", response.substring(0, 100) + "...");
-
     return NextResponse.json({ response });
   } catch (error: any) {
     console.error("[API] Error generating response:", error);

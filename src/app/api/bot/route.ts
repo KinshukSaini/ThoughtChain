@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { decideCreateNode } from './bot';
+import { decideCreateNode, generateResponse } from './bot';
 
 // Global storage (in production, you'd use a database)
 let Messages: Message[] = [];
@@ -46,11 +46,16 @@ class ChatMessage implements Message {
 
 async function createNode(message: string): Promise<{ create: string; title: string | null }> {
   try {
+    console.log('[createNode] Calling decideCreateNode for message:', message);
     const res = await decideCreateNode(message, Nodes);
+    console.log('[createNode] decideCreateNode returned:', res);
     return { create: res.create ?? 'no', title: res.title ?? null };
   } catch (err) {
+    console.error('[createNode] Error in decideCreateNode:', err);
     if (message === '0') return { create: 'no', title: null };
-    return { create: 'yes', title: 'new node' };
+    // Generate a simple title from the message
+    const simpleTitle = message.length > 30 ? message.substring(0, 30) + '...' : message;
+    return { create: 'yes', title: simpleTitle };
   }
 }
 
@@ -81,21 +86,31 @@ async function addMessageToTree(
       }
     }
 
-    const { create, title } = await createNode(messageContent);
     const newMessage = new ChatMessage(messageId, messageContent, role);
     Messages.push(newMessage);
 
-    if (create === 'no') {
+    // Only decide to create new node for user messages, not bot responses
+    if (role === 'user') {
+      const { create, title } = await createNode(messageContent);
+      console.log('[addMessageToTree] User message - create:', create, 'title:', title);
+
+      if (create === 'no') {
+        currNode.NodeMessages.push(newMessage);
+        return { success: true, messageId, nodeId: currNode.id };
+      } else {
+        const newNode = new ChatNode(Nodes.length, title || messageContent.substring(0, 20));
+        console.log('[addMessageToTree] Creating new node:', newNode.id, newNode.title);
+        if (Nodes.length > 0) {
+          currNode.Children.push(newNode);
+        }
+        Nodes.push(newNode);
+        newNode.NodeMessages.push(newMessage);
+        return { success: true, messageId, nodeId: newNode.id };
+      }
+    } else {
+      // Bot messages always go to the current node
       currNode.NodeMessages.push(newMessage);
       return { success: true, messageId, nodeId: currNode.id };
-    } else {
-      const newNode = new ChatNode(Nodes.length, title || 'new node');
-      if (Nodes.length > 0) {
-        currNode.Children.push(newNode);
-      }
-      Nodes.push(newNode);
-      newNode.NodeMessages.push(newMessage);
-      return { success: true, messageId, nodeId: newNode.id };
     }
   } catch (error) {
     return { 
@@ -212,11 +227,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Add a new message to the tree
+// POST - Add a new message to the tree and optionally get AI response
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, role, nodeId } = body;
+    const { message, role, nodeId, generateAI } = body;
 
     if (!message || !role) {
       return NextResponse.json(
@@ -228,10 +243,36 @@ export async function POST(request: NextRequest) {
     const result = await addMessageToTree(message, role, nodeId);
     
     if (result.success) {
+      let aiResponse = null;
+      let aiNodeId = result.nodeId;
+      let nodeTitle = null;
+      
+      // If user message and generateAI is true, get AI response
+      if (role === 'user' && generateAI) {
+        const conversationHistory = Messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        const aiText = await generateResponse(message, conversationHistory);
+        const aiResult = await addMessageToTree(aiText, 'bot', result.nodeId);
+        
+        if (aiResult.success) {
+          aiResponse = aiText;
+          aiNodeId = aiResult.nodeId;
+          
+          // Get the node title (already set during node creation if create === 'yes')
+          const currentNode = Nodes.find(n => n.id === aiNodeId);
+          nodeTitle = currentNode?.title || null;
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         messageId: result.messageId,
-        nodeId: result.nodeId,
+        nodeId: aiNodeId,
+        aiResponse: aiResponse,
+        nodeTitle: nodeTitle,
         tree: getTreeVisualization()
       });
     } else {
