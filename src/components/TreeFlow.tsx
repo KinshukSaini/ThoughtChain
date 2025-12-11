@@ -7,6 +7,8 @@ const TreeFlow = () => {
   const rf = useRef<any>(null);
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [expandedMessages, setExpandedMessages] = useState<Set<number>>(new Set());
 
   const onNodesChange = useCallback((c: any) => setNodes((n) => applyNodeChanges(c, n)), []);
 
@@ -22,7 +24,11 @@ const TreeFlow = () => {
         // Convert API nodes to ReactFlow nodes
         const flowNodes = data.nodes.map((node: any) => ({
           id: String(node.nodeId),
-          data: { label: node.title || `Node ${node.nodeId}` },
+          data: { 
+            label: node.title || `Node ${node.nodeId}`,
+            messages: node.messages || [],
+            messageCount: node.messages?.length || 0
+          },
           position: { x: 0, y: 0 },
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
@@ -33,6 +39,7 @@ const TreeFlow = () => {
             borderRadius: '8px',
             padding: '10px',
             fontSize: '12px',
+            minWidth: '120px',
           }
         }));
 
@@ -101,15 +108,18 @@ const TreeFlow = () => {
   useEffect(() => { const t = setTimeout(layoutTree, 0); return () => clearTimeout(t); }, [nodes.length, edges.length, layoutTree]);
   useEffect(() => { if (rf.current && nodes.length) setTimeout(() => rf.current?.fitView?.({ padding: 0.15 }), 50); }, [nodes.length]);
 
-  // Handle node click - emit event to scroll to node in chat
+  // Handle node click - show messages and scroll to node in chat
   const handleNodeClick = useCallback((_: any, node: any) => {
     const nodeId = Number(node.id);
-    console.log('[TreeFlow] Node clicked:', nodeId);
+    console.log('[TreeFlow] Node clicked:', nodeId, node.data);
+    
+    // Toggle selected node
+    setSelectedNode(selectedNode?.id === node.id ? null : node);
     
     // Dispatch custom event that chat page can listen to
     const event = new CustomEvent('scrollToNode', { detail: { nodeId } });
     window.dispatchEvent(event);
-  }, []);
+  }, [selectedNode]);
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative", background: "#1a1a1a" }}>
@@ -125,6 +135,121 @@ const TreeFlow = () => {
       >
         <Background color="#444" gap={16} />
       </ReactFlow>
+      
+      {/* Message Panel */}
+      {selectedNode && (
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: '#2d2d2d',
+          border: '1px solid #555',
+          borderRadius: '8px',
+          padding: '15px',
+          maxWidth: '350px',
+          maxHeight: '80vh',
+          overflowY: 'auto',
+          color: '#fff',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 10
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>{selectedNode.data.label}</h3>
+            <button 
+              onClick={() => setSelectedNode(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#aaa',
+                cursor: 'pointer',
+                fontSize: '18px',
+                padding: '0 5px'
+              }}
+            >×</button>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '11px', color: '#888' }}>
+              {selectedNode.data.messages.filter((m: any) => m.role === 'user').length} prompt{selectedNode.data.messages.filter((m: any) => m.role === 'user').length !== 1 ? 's' : ''}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {selectedNode.data.messages
+              .filter((msg: any) => msg.role === 'user')
+              .map((msg: any, idx: number) => {
+                const msgIndex = selectedNode.data.messages.indexOf(msg);
+                const isExpanded = expandedMessages.has(msgIndex);
+                const botResponse = selectedNode.data.messages[msgIndex + 1];
+                const hasBotResponse = botResponse && botResponse.role === 'bot';
+                
+                return (
+                  <div key={idx}>
+                    {/* User Message */}
+                    <div style={{
+                      background: '#3a3a3a',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      borderLeft: '3px solid #b86192'
+                    }}>
+                      <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
+                        👤 User
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#e3e3e3', wordBreak: 'break-word' }}>
+                        {msg.content}
+                      </div>
+                    </div>
+                    
+                    {/* Show/Hide Response Button */}
+                    {hasBotResponse && (
+                      <button
+                        onClick={() => {
+                          const newExpanded = new Set(expandedMessages);
+                          if (isExpanded) {
+                            newExpanded.delete(msgIndex);
+                          } else {
+                            newExpanded.add(msgIndex);
+                          }
+                          setExpandedMessages(newExpanded);
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid #555',
+                          color: '#888',
+                          fontSize: '10px',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          marginTop: '4px',
+                          width: '100%',
+                          textAlign: 'left'
+                        }}
+                      >
+                        {isExpanded ? '▼ Hide Response' : '▶ Show Response'}
+                      </button>
+                    )}
+                    
+                    {/* Bot Response (conditionally shown) */}
+                    {hasBotResponse && isExpanded && (
+                      <div style={{
+                        background: '#2a2a2a',
+                        padding: '8px',
+                        borderRadius: '6px',
+                        borderLeft: '3px solid #666',
+                        marginTop: '4px'
+                      }}>
+                        <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
+                          🤖 Bot
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#e3e3e3', wordBreak: 'break-word' }}>
+                          {botResponse.content}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

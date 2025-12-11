@@ -65,7 +65,8 @@ const ChatPage = () => {
       });
       const data = await response.json();
       if (data.success) {
-        setCurrentNodeId(data.rootNodeId);
+        // Set to 0 if rootNodeId doesn't exist (after recent changes)
+        setCurrentNodeId(data.rootNodeId ?? 0);
       }
     } catch (error) {
       console.error('Failed to initialize chat:', error);

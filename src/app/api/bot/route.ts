@@ -91,6 +91,17 @@ async function addMessageToTree(
 
     // Only decide to create new node for user messages, not bot responses
     if (role === 'user') {
+      // If this is the first message to root node, update its title
+      if (currNode.title === 'Root Node' && currNode.NodeMessages.length === 0) {
+        const { title } = await createNode(messageContent);
+        if (title) {
+          currNode.title = title;
+          console.log('[addMessageToTree] Updated root node title to:', title);
+        }
+        currNode.NodeMessages.push(newMessage);
+        return { success: true, messageId, nodeId: currNode.id };
+      }
+      
       const { create, title } = await createNode(messageContent);
       console.log('[addMessageToTree] User message - create:', create, 'title:', title);
 
@@ -113,11 +124,12 @@ async function addMessageToTree(
       return { success: true, messageId, nodeId: currNode.id };
     }
   } catch (error) {
+    console.error('[addMessageToTree] Error:', error);
     return { 
       success: false, 
       messageId: 0, 
       nodeId: 0, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : 'Unknown error in addMessageToTree' 
     };
   }
 }
@@ -242,13 +254,20 @@ export async function POST(request: NextRequest) {
 
     const result = await addMessageToTree(message, role, nodeId);
     
-    if (result.success) {
-      let aiResponse = null;
-      let aiNodeId = result.nodeId;
-      let nodeTitle = null;
-      
-      // If user message and generateAI is true, get AI response
-      if (role === 'user' && generateAI) {
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || 'Failed to add message' },
+        { status: 400 }
+      );
+    }
+    
+    let aiResponse = null;
+    let aiNodeId = result.nodeId;
+    let nodeTitle = null;
+    
+    // If user message and generateAI is true, get AI response
+    if (role === 'user' && generateAI) {
+      try {
         const conversationHistory = Messages.map(msg => ({
           role: msg.role,
           content: msg.content
@@ -264,26 +283,28 @@ export async function POST(request: NextRequest) {
           // Get the node title (already set during node creation if create === 'yes')
           const currentNode = Nodes.find(n => n.id === aiNodeId);
           nodeTitle = currentNode?.title || null;
+        } else {
+          console.error('[POST] Failed to add bot message:', aiResult.error);
         }
+      } catch (aiError) {
+        console.error('[POST] Error generating AI response:', aiError);
+        // Return success for user message even if AI fails
+        aiResponse = 'Sorry, I encountered an error generating a response.';
       }
-      
-      return NextResponse.json({
-        success: true,
-        messageId: result.messageId,
-        nodeId: aiNodeId,
-        aiResponse: aiResponse,
-        nodeTitle: nodeTitle,
-        tree: getTreeVisualization()
-      });
-    } else {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 400 }
-      );
     }
+      
+    return NextResponse.json({
+      success: true,
+      messageId: result.messageId,
+      nodeId: aiNodeId,
+      aiResponse: aiResponse,
+      nodeTitle: nodeTitle,
+      tree: getTreeVisualization()
+    });
   } catch (error) {
+    console.error('[POST] Error processing request:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to process request' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to process request' },
       { status: 500 }
     );
   }
