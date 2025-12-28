@@ -19,7 +19,7 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden pt-32 pb-24 md:pt-40 md:pb-32">
+        <section className="relative overflow-hidden pt-52 pb-48 md:pt-56 md:pb-52">
           <div className="absolute inset-0 pointer-events-none" />
           <div className="container mx-auto px-6 text-center max-w-5xl relative z-10">
             

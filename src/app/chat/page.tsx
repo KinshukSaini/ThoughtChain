@@ -279,7 +279,6 @@ const ChatPage = () => {
               </div>
             </div>
           )}
-          <MessageSection messages={messages} messageRefs={messageRefs} />    
         </div>
         
         {/* Input at bottom */}
