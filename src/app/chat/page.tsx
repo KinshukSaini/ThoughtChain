@@ -35,28 +35,47 @@ const ChatPage = () => {
   
   // Listen for node click events from TreeFlow
   useEffect(() => {
-    const handleScrollToNode = (event: any) => {
+    const handleScrollToNode = async (event: any) => {
       const { nodeId } = event.detail;
-      console.log('[Chat] Scrolling to node:', nodeId);
+      console.log('[Chat] Loading path to node:', nodeId);
       
-      // Find the first message with this nodeId
-      const messageWithNode = messages.find(msg => msg.nodeId === nodeId);
-      if (messageWithNode) {
-        const element = messageRefs.current.get(messageWithNode.id);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Highlight briefly
-          element.style.backgroundColor = '#444';
-          setTimeout(() => {
-            element.style.backgroundColor = '';
-          }, 1000);
+      try {
+        // Fetch the path from root to this node
+        const response = await fetch(`/api/bot?pathTo=${nodeId}`);
+        const data = await response.json();
+        
+        if (data.success && data.path) {
+          // Convert path data to messages
+          const pathMessages: Message[] = [];
+          let messageIdCounter = 1;
+          
+          data.path.forEach((node: any) => {
+            node.messages.forEach((msg: any) => {
+              pathMessages.push({
+                id: messageIdCounter++,
+                role: msg.role,
+                content: msg.content,
+                nodeId: node.nodeId
+              });
+            });
+          });
+          
+          // Update messages to show only the path to this node
+          setMessages(pathMessages);
+          
+          // Update current node ID so new messages go to this node
+          setCurrentNodeId(nodeId);
+          
+          console.log('[Chat] Loaded', pathMessages.length, 'messages up to node', nodeId);
         }
+      } catch (error) {
+        console.error('[Chat] Failed to load path to node:', error);
       }
     };
     
     window.addEventListener('scrollToNode', handleScrollToNode);
     return () => window.removeEventListener('scrollToNode', handleScrollToNode);
-  }, [messages]);
+  }, []);
 
   const initializeChat = async () => {
     try {
