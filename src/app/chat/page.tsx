@@ -266,7 +266,7 @@ const ChatPage = () => {
         </header>
         
         {/* Message space */}
-        <div className="flex-1 overflow-y-auto text-[#e3e3e3] flex flex-col-reverse px-4 md:px-32 mt-16 md:mt-0">
+        <div className="flex-1 overflow-y-auto text-[#e3e3e3] flex flex-col-reverse">
           <MessageSection messages={messages} messageRefs={messageRefs} />
           {isLoading && (
             <div className='flex justify-start m-2'>
@@ -279,6 +279,7 @@ const ChatPage = () => {
               </div>
             </div>
           )}
+          <MessageSection messages={messages} messageRefs={messageRefs} />    
         </div>
         
         {/* Input at bottom */}
