@@ -13,7 +13,7 @@ export async function generateResponse(input: string, messages: Array<{role: str
     `${msg.role === 'user' ? 'Student' : 'ThoughtChain'}: ${msg.content}`
   ).join('\n');
 
-  const prompt = `You are ThoughtChain, an AI study assistant helping students prepare for exams. 
+  const prompt = `You are ThoughtChain, an AI study assistant helping students prepare for exams.
 Based on the conversation history and the user's question, provide a helpful, clear, and educational response.
 
 Conversation History:
@@ -22,7 +22,7 @@ ${conversationHistory}
 Current question:
 ${input}
 
-Provide a direct, helpful answer to the user's question. Keep it educational and relevant to their studies.`;
+Provide a direct, helpful answer to the user's question. Keep it educational and relevant to their studies. keep it concise and to the point with markdown formatting where appropriate.`;
 
   const result = await model.generateContent(prompt);
   const response = result.response;

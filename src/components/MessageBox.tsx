@@ -1,4 +1,10 @@
 import React from 'react'
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkSupersub from 'remark-supersub'; // For H~2~O and X^2^
+import { remarkHighlightMark } from 'remark-highlight-mark';
+
+
 type Props = {
   id: number;
   role: string;
@@ -35,7 +41,7 @@ const MessageBox = ({id, role, content, files} : Props) => {
         </div>
       ) : (
         <div className="flex justify-start m-2">
-          <div className="text-white p-4 rounded-lg max-w-max wrap-break-word">{content}</div>
+          <div className="text-white p-4 rounded-lg max-w-max wrap-break-word"><ReactMarkdown remarkPlugins={[remarkGfm, remarkSupersub]}>{content}</ReactMarkdown></div>
         </div>
       )}
     </div>
