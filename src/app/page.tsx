@@ -10,7 +10,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-4">
           <Link href="/chat">
-            <button className="h-8 rounded-full bg-[#a855f7] px-5 text-sm font-semibold text-white shadow hover:bg-[#a855f7]/90 transition-colors">
+            <button className="h-8 rounded-full border-2 border-[#a855f7] px-5 text-sm font-semibold text-white shadow hover:bg-[#a855f7]/90 transition-colors">
               Get Started
             </button>
           </Link>
@@ -40,9 +40,6 @@ export default function LandingPage() {
                   <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </Link>
-              <button className="h-14 rounded-full border-2 border-white/20 bg-transparent px-10 text-lg font-semibold text-white hover:bg-white/5 hover:border-white/30 transition-all duration-200">
-                See How It Works
-              </button>
             </div>
           </div>
         </section>
@@ -208,7 +205,7 @@ export default function LandingPage() {
                   </div>
                   <div className="pt-1">
                     <h3 className="font-bold text-2xl mb-3">Move up a level</h3>
-                    <p className="text-[#a1a1aa] text-lg">Instantly return to the bigger picture with clean context.</p>
+                    <p className="text-[#a1a1aa] text-lg">With just a click return to the bigger picture with clean context.</p>
                   </div>
                 </div>
                 
@@ -317,27 +314,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-white/5 bg-[#0a0a0b] px-6 py-12">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-8 md:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex size-6 items-center justify-center rounded-md bg-[#a855f7]">
-              <Network className="size-3.5 text-white" />
-            </div>
-            <span className="font-bold">ThoughtChain</span>
-          </div>
-          <div className="flex flex-wrap justify-center gap-8">
-            <Link href="#" className="text-xs text-[#a1a1aa] hover:text-[#f5f5f5] transition-colors">
-              Terms
-            </Link>
-            <Link href="#" className="text-xs text-[#a1a1aa] hover:text-[#f5f5f5] transition-colors">
-              Privacy
-            </Link>
-            <Link href="#" className="text-xs text-[#a1a1aa] hover:text-[#f5f5f5] transition-colors">
-              GitHub
-            </Link>
-            <Link href="#" className="text-xs text-[#a1a1aa] hover:text-[#f5f5f5] transition-colors">
-              Discord
-            </Link>
-          </div>
+        <div className="container mx-auto flex flex-col items-center justify-center md:flex-row">
           <p className="text-xs text-[#a1a1aa]">© 2025 ThoughtChain. Powered by Gemini.</p>
         </div>
       </footer>
