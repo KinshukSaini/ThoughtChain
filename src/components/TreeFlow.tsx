@@ -22,29 +22,26 @@ const TreeFlow = () => {
         console.log('[TreeFlow] Fetched nodes:', data.nodes);
         
         // Convert API nodes to ReactFlow nodes
-        const flowNodes = data.nodes.map((node: any) => {
-          const isSelected = selectedNode?.id === String(node.nodeId);
-          return {
-            id: String(node.nodeId),
-            data: { 
-              label: node.title || `Node ${node.nodeId}`,
-              messages: node.messages || [],
-              messageCount: node.messages?.length || 0
-            },
-            position: { x: 0, y: 0 },
-            sourcePosition: Position.Bottom,
-            targetPosition: Position.Top,
-            style: {
-              background: '#2d2d2d',
-              color: '#fff',
-              border: isSelected ? '3px solid white' : '1px solid #555',
-              borderRadius: '8px',
-              padding: '10px',
-              fontSize: '12px',
-              minWidth: '120px',
-            }
-          };
-        });
+        const flowNodes = data.nodes.map((node: any) => ({
+          id: String(node.nodeId),
+          data: { 
+            label: node.title || `Node ${node.nodeId}`,
+            messages: node.messages || [],
+            messageCount: node.messages?.length || 0
+          },
+          position: { x: 0, y: 0 },
+          sourcePosition: Position.Bottom,
+          targetPosition: Position.Top,
+          style: {
+            background: '#2d2d2d',
+            color: '#fff',
+            border: '1px solid #555',
+            borderRadius: '8px',
+            padding: '10px',
+            fontSize: '12px',
+            minWidth: '120px',
+          }
+        }));
 
         // Convert API children relationships to ReactFlow edges
         const flowEdges: any[] = [];
@@ -67,7 +64,7 @@ const TreeFlow = () => {
     } catch (error) {
       console.error('[TreeFlow] Failed to fetch tree:', error);
     }
-  }, [setEdges, selectedNode]);
+  }, [setEdges]);
 
   // Fetch tree on mount only - no polling
   useEffect(() => {
@@ -117,16 +114,12 @@ const TreeFlow = () => {
     console.log('[TreeFlow] Node clicked:', nodeId, node.data);
     
     // Toggle selected node
-    const newSelectedNode = selectedNode?.id === node.id ? null : node;
-    setSelectedNode(newSelectedNode);
-    
-    // Refresh tree to update border styling
-    fetchTree();
+    setSelectedNode(selectedNode?.id === node.id ? null : node);
     
     // Dispatch custom event that chat page can listen to
     const event = new CustomEvent('scrollToNode', { detail: { nodeId } });
     window.dispatchEvent(event);
-  }, [selectedNode, fetchTree]);
+  }, [selectedNode]);
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative", background: "#1a1a1a" }}>

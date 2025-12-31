@@ -22,7 +22,7 @@ ${conversationHistory}
 Current question:
 ${input}
 
-Provide a direct, helpful answer to the user's question. Keep it educational and relevant to their studies. keep it concise and to the point with markdown formatting where appropriate.`;
+Provide a direct, helpful answer to the user's question. Keep it educational and relevant to their studies. keep it concise (50 words) and to the point with markdown formatting where appropriate.`;
 
   const result = await model.generateContent(prompt);
   const response = result.response;

@@ -5,8 +5,6 @@ import InputBox from '@/components/InputBox'
 import MessageSection from '@/components/MessageSection'
 import { useState, useEffect } from 'react'
 import TreeFlow from '@/components/TreeFlow';
-import Link from 'next/link';
-import { Network } from 'lucide-react';
 
 interface Message {
   id: number;
@@ -28,33 +26,7 @@ const ChatPage = () => {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentNodeId, setCurrentNodeId] = useState<number>(0);
-  const [mobileView, setMobileView] = useState<'chat' | 'graph'>('chat');
-  const [isClient, setIsClient] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const messageRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
-
-  // Handle client-side hydration
-  useEffect(() => {
-    setIsClient(true);
-    setIsMobile(window.innerWidth < 768);
-  }, []);
-
-  // Handle window resize for mobile/desktop switch
-  useEffect(() => {
-    const handleResize = () => {
-      const wasMobile = isMobile;
-      const nowMobile = window.innerWidth < 768;
-      
-      if (wasMobile !== nowMobile) {
-        setIsMobile(nowMobile);
-        // Force reload on breakpoint change
-        window.location.reload();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile]);
 
   // Initialize chat on mount
   useEffect(() => {
@@ -225,49 +197,16 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex flex-row bg-[#252526] h-screen overflow-hidden relative">
-      {/* Mobile Toggle Buttons */}
-      <div className="md:hidden absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-2 bg-[#181819] rounded-full p-1 border border-white/10 w-[90vw] max-w-md">
-        <button
-          onClick={() => setMobileView('chat')}
-          className={`flex-1 py-3 rounded-full text-base font-semibold transition-all ${
-            mobileView === 'chat'
-              ? 'bg-[#a855f7] text-white shadow-lg shadow-[#a855f7]/30'
-              : 'text-[#a1a1aa] hover:text-white'
-          }`}
-        >
-          Chat
-        </button>
-        <button
-          onClick={() => setMobileView('graph')}
-          className={`flex-1 py-3 rounded-full text-base font-semibold transition-all ${
-            mobileView === 'graph'
-              ? 'bg-[#a855f7] text-white shadow-lg shadow-[#a855f7]/30'
-              : 'text-[#a1a1aa] hover:text-white'
-          }`}
-        >
-          Graph
-        </button>
-      </div>
-
-      {/* Chat Container */}
-      <div 
-        className={`overflow-hidden bg-[#0a0a0b] flex flex-col w-full ${
-          mobileView === 'chat' ? 'flex' : 'hidden'
-        } md:flex`}
-        style={isClient && window.innerWidth >= 768 ? { width: `${chatWidth}%` } : undefined}
-      >
-        {/* Header - Landing Page Style (hidden on mobile) */}
-        <header className="hidden md:flex sticky top-0 z-50 h-16 items-center justify-between border-b border-white/5 bg-[#0a0a0b]/80 px-6 backdrop-blur-xl">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <span className="text-xl font-bold tracking-tight text-[#a855f7]">ThoughtChain</span>
-          </Link>
-          
-        </header>
+    <div className="flex flex-row bg-[#252526] h-screen overflow-hidden">
+      {/* Chat Container*/}
+      <div className='rounded-3xl overflow-hidden bg-[#131314] flex flex-col px-32' style={{ width: `${chatWidth}%` }}>
+        {/* Header */}
+        <div className='text-left text-3xl font-semibold bg-[#181819] p-5 bg-linear-to-r from-[#b86192] to-[#992366] bg-clip-text text-transparent'>
+          ThoughtChain
+        </div>
         
         {/* Message space */}
         <div className="flex-1 overflow-y-auto text-[#e3e3e3] flex flex-col-reverse">
-          <MessageSection messages={messages} messageRefs={messageRefs} />
           {isLoading && (
             <div className='flex justify-start m-2'>
               <div className='text-white p-4 rounded-lg'>
@@ -279,28 +218,25 @@ const ChatPage = () => {
               </div>
             </div>
           )}
+          <MessageSection messages={messages} messageRefs={messageRefs} />    
         </div>
         
         {/* Input at bottom */}
-        <div className='flex justify-center items-center px-4 md:px-32'>
+        <div className='flex justify-center items-center'>
           <InputBox onSendMessage={handleSendMessage} />
         </div>
       </div>
 
       {/* Resizable divider */}
       <div 
-        className='hidden md:flex w-2 hover:bg-[#a19fa3] cursor-col-resize transition-colors justify-center items-center'
+        className='flex w-2 hover:bg-[#a19fa3] cursor-col-resize transition-colors justify-center items-center'
         onMouseDown={handleMouseDown}
       >
         <div className='w-0.5 h-8 bg-gray-500'></div>
       </div>
 
       {/* mind map - graph */}
-      <div 
-        className={`flex-1 h-screen bg-[#252526] ${
-          mobileView === 'graph' ? 'flex' : 'hidden'
-        } md:flex`}
-      >
+      <div className='flex-1 h-screen bg-[#252526]'>
         <TreeFlow />  
       </div>
     </div>
