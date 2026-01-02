@@ -40,7 +40,7 @@ const InputBox = ({ onSendMessage }: InputBoxProps) => {
   };
 
   return (
-    <div className="flex flex-col border-2 border-[#29292b] rounded-4xl my-8 px-2 py-2 w-full max-w-[40vw]">
+    <div className="flex flex-col border-2 border-[#29292b] rounded-4xl my-8 px-2 py-2 w-full lg:max-w-[40vw]">
       {/* File Preview */}
       {selectedFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 mx-5 mb-2">

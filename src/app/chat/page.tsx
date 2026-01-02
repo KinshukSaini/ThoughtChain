@@ -27,6 +27,18 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentNodeId, setCurrentNodeId] = useState<number>(0);
   const messageRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
+  const [activeView, setActiveView] = useState<'chat' | 'graph'>('chat');
+  const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+
+  // Handle screen resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Initialize chat on mount
   useEffect(() => {
@@ -197,16 +209,45 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex flex-row bg-[#252526] h-screen overflow-hidden">
+    <div className="flex flex-row bg-[#0a0a0b] h-screen overflow-hidden relative">
+      {/* Toggle Button for Small Screens */}
+      <div className="lg:hidden absolute top-4 right-4 z-50 flex gap-2 bg-[#0f0f10] border border-white/10 rounded-lg p-1">
+        <button
+          onClick={() => setActiveView('chat')}
+          className={`px-4 py-2 rounded transition-colors ${
+            activeView === 'chat' 
+              ? 'bg-[#a855f7] text-white shadow-lg shadow-[#a855f7]/30' 
+              : 'text-[#a1a1aa] hover:text-white'
+          }`}
+        >
+          Chat
+        </button>
+        <button
+          onClick={() => setActiveView('graph')}
+          className={`px-4 py-2 rounded transition-colors ${
+            activeView === 'graph' 
+              ? 'bg-[#a855f7] text-white shadow-lg shadow-[#a855f7]/30' 
+              : 'text-[#a1a1aa] hover:text-white'
+          }`}
+        >
+          Graph
+        </button>
+      </div>
+
       {/* Chat Container*/}
-      <div className='rounded-3xl overflow-hidden bg-[#131314] flex flex-col px-32' style={{ width: `${chatWidth}%` }}>
+      <div 
+        className={`rounded-3xl overflow-hidden bg-[#0f0f10] flex-col px-2 sm:px-4 md:px-8 lg:px-32 ${
+          activeView === 'chat' ? 'flex' : 'hidden'
+        } lg:flex`} 
+        style={{ width: isLargeScreen ? `${chatWidth}%` : '100%' }}
+      >
         {/* Header */}
-        <div className='text-left text-3xl font-semibold bg-[#181819] p-5 bg-linear-to-r from-[#b86192] to-[#992366] bg-clip-text text-transparent'>
+        <div className='text-left text-2xl sm:text-3xl font-semibold bg-[#0f0f10] p-5 bg-linear-to-r from-[#a855f7] to-[#c084fc] bg-clip-text text-transparent border-b border-white/5'>
           ThoughtChain
         </div>
         
         {/* Message space */}
-        <div className="flex-1 overflow-y-auto text-[#e3e3e3] flex flex-col-reverse">
+        <div className="flex-1 overflow-y-auto text-[#f5f5f5] flex flex-col-reverse">
           {isLoading && (
             <div className='flex justify-start m-2'>
               <div className='text-white p-4 rounded-lg'>
@@ -227,16 +268,19 @@ const ChatPage = () => {
         </div>
       </div>
 
-      {/* Resizable divider */}
       <div 
-        className='flex w-2 hover:bg-[#a19fa3] cursor-col-resize transition-colors justify-center items-center'
+        className='hidden lg:flex w-2 hover:bg-[#a855f7]/20 cursor-col-resize transition-colors justify-center items-center'
         onMouseDown={handleMouseDown}
       >
-        <div className='w-0.5 h-8 bg-gray-500'></div>
+        <div className='w-0.5 h-8 bg-white/20'></div>
       </div>
 
       {/* mind map - graph */}
-      <div className='flex-1 h-screen bg-[#252526]'>
+      <div 
+        className={`flex-1 h-screen bg-[#0a0a0b] ${
+          activeView === 'graph' ? 'block' : 'hidden'
+        } lg:block`}
+      >
         <TreeFlow />  
       </div>
     </div>
