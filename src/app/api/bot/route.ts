@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { decideCreateNode, generateResponse } from './bot';
+import { decideCreateNode, generateResponse, isQuotaExhaustedError } from './bot';
 
 // Global storage (in production, you'd use a database)
 let Messages: Message[] = [];
@@ -44,10 +44,10 @@ class ChatMessage implements Message {
   }
 }
 
-async function createNode(message: string): Promise<{ create: string; title: string | null }> {
+async function createNode(message: string, customApiKey?: string): Promise<{ create: string; title: string | null }> {
   try {
     console.log('[createNode] Calling decideCreateNode for message:', message);
-    const res = await decideCreateNode(message, Nodes);
+    const res = await decideCreateNode(message, Nodes, customApiKey);
     console.log('[createNode] decideCreateNode returned:', res);
     return { create: res.create ?? 'no', title: res.title ?? null };
   } catch (err) {
@@ -62,7 +62,8 @@ async function createNode(message: string): Promise<{ create: string; title: str
 async function addMessageToTree(
   messageContent: string,
   role: string,
-  nodeId?: number
+  nodeId?: number,
+  customApiKey?: string
 ): Promise<{ success: boolean; messageId: number; nodeId: number; error?: string }> {
   try {
     const messageId = Messages.length + 1;
@@ -93,7 +94,7 @@ async function addMessageToTree(
     if (role === 'user') {
       // If this is the first message to root node, update its title
       if (currNode.title === 'Root Node' && currNode.NodeMessages.length === 0) {
-        const { title } = await createNode(messageContent);
+        const { title } = await createNode(messageContent, customApiKey);
         if (title) {
           currNode.title = title;
           console.log('[addMessageToTree] Updated root node title to:', title);
@@ -102,7 +103,7 @@ async function addMessageToTree(
         return { success: true, messageId, nodeId: currNode.id };
       }
       
-      const { create, title } = await createNode(messageContent);
+      const { create, title } = await createNode(messageContent, customApiKey);
       console.log('[addMessageToTree] User message - create:', create, 'title:', title);
 
       if (create === 'no') {
@@ -243,7 +244,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, role, nodeId, generateAI } = body;
+    const { message, role, nodeId, generateAI, customApiKey } = body;
 
     if (!message || !role) {
       return NextResponse.json(
@@ -252,7 +253,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await addMessageToTree(message, role, nodeId);
+    const result = await addMessageToTree(message, role, nodeId, customApiKey);
     
     if (!result.success) {
       return NextResponse.json(
@@ -273,7 +274,7 @@ export async function POST(request: NextRequest) {
           content: msg.content
         }));
         
-        const aiText = await generateResponse(message, conversationHistory);
+        const aiText = await generateResponse(message, conversationHistory, customApiKey);
         const aiResult = await addMessageToTree(aiText, 'bot', result.nodeId);
         
         if (aiResult.success) {
@@ -286,8 +287,20 @@ export async function POST(request: NextRequest) {
         } else {
           console.error('[POST] Failed to add bot message:', aiResult.error);
         }
-      } catch (aiError) {
+      } catch (aiError: any) {
         console.error('[POST] Error generating AI response:', aiError);
+        
+        // Check if it's a quota exhaustion error
+        if (isQuotaExhaustedError(aiError)) {
+          return NextResponse.json({
+            success: false,
+            error: 'API quota exhausted',
+            quotaExhausted: true,
+            messageId: result.messageId,
+            nodeId: result.nodeId
+          }, { status: 429 });
+        }
+        
         // Return success for user message even if AI fails
         aiResponse = 'Sorry, I encountered an error generating a response.';
       }

@@ -5,6 +5,7 @@ import InputBox from '@/components/InputBox'
 import MessageSection from '@/components/MessageSection'
 import { useState, useEffect } from 'react'
 import TreeFlow from '@/components/TreeFlow';
+import ApiKeyModal from '@/components/ApiKeyModal';
 
 interface Message {
   id: number;
@@ -29,6 +30,8 @@ const ChatPage = () => {
   const messageRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
   const [activeView, setActiveView] = useState<'chat' | 'graph'>('chat');
   const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<{ content: string; files?: File[] } | null>(null);
 
   // Handle screen resize
   useEffect(() => {
@@ -154,6 +157,9 @@ const ChatPage = () => {
     setIsLoading(true);
 
     try {
+      // Get custom API key from localStorage if available
+      const customApiKey = localStorage.getItem('userGeminiApiKey') || undefined;
+      
       // Send message to bot API with generateAI flag
       const response = await fetch('/api/bot', {
         method: 'POST',
@@ -164,11 +170,21 @@ const ChatPage = () => {
           message: messageContent,
           role: 'user',
           nodeId: currentNodeId,
-          generateAI: true
+          generateAI: true,
+          customApiKey
         })
       });
 
       const data = await response.json();
+      
+      // Check for quota exhaustion
+      if (data.quotaExhausted) {
+        // Store the pending message for retry after API key is added
+        setPendingMessage({ content: messageContent, files });
+        setShowApiKeyModal(true);
+        setIsLoading(false);
+        return;
+      }
       
       if (data.success && data.aiResponse) {
         setCurrentNodeId(data.nodeId);
@@ -208,8 +224,88 @@ const ChatPage = () => {
     }
   };
 
+  // Handle API key submission - retry pending message with new key
+  const handleApiKeySubmit = async (apiKey: string) => {
+    setShowApiKeyModal(false);
+    
+    if (pendingMessage) {
+      // Retry the pending message with the new API key
+      setIsLoading(true);
+      
+      try {
+        const response = await fetch('/api/bot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: pendingMessage.content,
+            role: 'user',
+            nodeId: currentNodeId,
+            generateAI: true,
+            customApiKey: apiKey
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.quotaExhausted) {
+          // Still quota exhausted - maybe invalid key
+          const errorMessage: Message = {
+            id: getUniqueId(),
+            role: 'bot',
+            content: 'The API key provided is also exhausted or invalid. Please try a different key.'
+          };
+          setMessages(prev => [...prev, errorMessage]);
+          setShowApiKeyModal(true);
+          return;
+        }
+        
+        if (data.success && data.aiResponse) {
+          setCurrentNodeId(data.nodeId);
+          
+          const botMessage: Message = {
+            id: getUniqueId(),
+            role: 'bot',
+            content: data.aiResponse,
+            nodeId: data.nodeId
+          };
+          
+          setMessages(prev => [...prev, botMessage]);
+          
+          if ((window as any).refreshTree) {
+            (window as any).refreshTree();
+          }
+        } else if (!data.success) {
+          throw new Error(data.error || 'Failed to get response');
+        }
+      } catch (error) {
+        console.error('Failed to retry message:', error);
+        const errorMessage: Message = {
+          id: getUniqueId(),
+          role: 'bot',
+          content: 'Sorry, I encountered an error. Please check your API key and try again.'
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        setIsLoading(false);
+        setPendingMessage(null);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-row bg-[#0a0a0b] h-screen overflow-hidden relative">
+      {/* API Key Modal */}
+      <ApiKeyModal 
+        isOpen={showApiKeyModal}
+        onClose={() => {
+          setShowApiKeyModal(false);
+          setPendingMessage(null);
+        }}
+        onSubmit={handleApiKeySubmit}
+      />
+      
       {/* Toggle Button for Small Screens */}
       <div className="lg:hidden absolute top-4 right-4 z-50 flex gap-2 bg-[#0f0f10] border border-white/10 rounded-lg p-1">
         <button
