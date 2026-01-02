@@ -121,6 +121,17 @@ const TreeFlow = () => {
     window.dispatchEvent(event);
   }, [selectedNode]);
 
+  // Update node styles when selection changes
+  useEffect(() => {
+    setNodes((nds) => nds.map((n) => ({
+      ...n,
+      style: {
+        ...n.style,
+        border: selectedNode?.id === n.id ? '2px solid #aaa' : '1px solid #555',
+      }
+    })));
+  }, [selectedNode]);
+
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative", background: "#1a1a1a" }}>
       <ReactFlow 
