@@ -32,6 +32,47 @@ const ChatPage = () => {
   const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<{ content: string; files?: File[] } | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Get or create session ID
+  const getSessionId = (): string => {
+    if (sessionId) return sessionId;
+    
+    // Try to get from localStorage
+    const stored = localStorage.getItem('thoughtchain-session-id');
+    if (stored) {
+      setSessionId(stored);
+      return stored;
+    }
+    
+    // Generate new session ID with fallback
+    let newSessionId: string;
+    try {
+      newSessionId = crypto.randomUUID();
+    } catch {
+      // Fallback for browsers that don't support crypto.randomUUID()
+      newSessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    localStorage.setItem('thoughtchain-session-id', newSessionId);
+    setSessionId(newSessionId);
+    console.log('[Chat] Generated new session ID:', newSessionId);
+    return newSessionId;
+  };
+
+  // Helper to make API requests with session ID
+  const apiRequest = async (url: string, options: RequestInit = {}) => {
+    const currentSessionId = getSessionId();
+    const headers = {
+      'x-session-id': currentSessionId,
+      ...options.headers
+    };
+    
+    return fetch(url, {
+      ...options,
+      headers
+    });
+  };
 
   // Handle screen resize
   useEffect(() => {
@@ -56,7 +97,7 @@ const ChatPage = () => {
       
       try {
         // Fetch the path from root to this node
-        const response = await fetch(`/api/bot?pathTo=${nodeId}`);
+        const response = await apiRequest(`/api/bot?pathTo=${nodeId}`);
         const data = await response.json();
         
         if (data.success && data.path) {
@@ -94,13 +135,18 @@ const ChatPage = () => {
 
   const initializeChat = async () => {
     try {
-      const response = await fetch('/api/bot', {
+      const response = await apiRequest('/api/bot', {
         method: 'PUT',
       });
       const data = await response.json();
       if (data.success) {
         // Set to 0 if rootNodeId doesn't exist (after recent changes)
         setCurrentNodeId(data.rootNodeId ?? 0);
+        // Update session ID if returned from server
+        if (data.sessionId) {
+          setSessionId(data.sessionId);
+          localStorage.setItem('thoughtchain-session-id', data.sessionId);
+        }
       }
     } catch (error) {
       console.error('Failed to initialize chat:', error);
@@ -161,7 +207,7 @@ const ChatPage = () => {
       const customApiKey = localStorage.getItem('userGeminiApiKey') || undefined;
       
       // Send message to bot API with generateAI flag
-      const response = await fetch('/api/bot', {
+      const response = await apiRequest('/api/bot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +279,7 @@ const ChatPage = () => {
       setIsLoading(true);
       
       try {
-        const response = await fetch('/api/bot', {
+        const response = await apiRequest('/api/bot', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -15,11 +15,22 @@ const TreeFlow = () => {
   // Fetch tree data from API
   const fetchTree = useCallback(async () => {
     try {
-      const response = await fetch('/api/bot');
+      // Get session ID from localStorage
+      const sessionId = localStorage.getItem('thoughtchain-session-id');
+      const url = sessionId ? `/api/bot?sessionId=${sessionId}` : '/api/bot';
+      
+      const response = await fetch(url, {
+        headers: sessionId ? { 'x-session-id': sessionId } : {}
+      });
       const data = await response.json();
       
       if (data.success && data.nodes) {
         console.log('[TreeFlow] Fetched nodes:', data.nodes);
+        
+        // Store session ID if returned from server
+        if (data.sessionId && data.sessionId !== sessionId) {
+          localStorage.setItem('thoughtchain-session-id', data.sessionId);
+        }
         
         // Convert API nodes to ReactFlow nodes
         const flowNodes = data.nodes.map((node: any) => ({

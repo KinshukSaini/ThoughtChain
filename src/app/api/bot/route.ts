@@ -1,9 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decideCreateNode, generateResponse, isQuotaExhaustedError } from './bot';
+import { randomUUID } from 'crypto';
 
-// Global storage (in production, you'd use a database)
-let Messages: Message[] = [];
-let Nodes: Node[] = [];
+// Session-based storage (in production, you'd use a database with user sessions)
+const sessionStorage = new Map<string, { messages: Message[], nodes: Node[] }>();
+
+// Cleanup old sessions (older than 24 hours)
+const cleanupOldSessions = () => {
+  const oneDay = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  
+  for (const [sessionId, data] of sessionStorage.entries()) {
+    // Extract timestamp from sessionId (UUID v4 doesn't have timestamp, so we'll track separately)
+    const sessionTimestamp = (data as any).lastActivity || now;
+    if (now - sessionTimestamp > oneDay) {
+      sessionStorage.delete(sessionId);
+      console.log('[Session] Cleaned up old session:', sessionId);
+    }
+  }
+};
+
+// Cleanup every hour
+setInterval(cleanupOldSessions, 60 * 60 * 1000);
+
+// Get or create session storage
+const getSessionStorage = (sessionId: string) => {
+  if (!sessionStorage.has(sessionId)) {
+    sessionStorage.set(sessionId, { 
+      messages: [], 
+      nodes: [],
+      lastActivity: Date.now()
+    } as any);
+    console.log('[Session] Created new session:', sessionId);
+  } else {
+    // Update last activity
+    const data = sessionStorage.get(sessionId)!;
+    (data as any).lastActivity = Date.now();
+  }
+  return sessionStorage.get(sessionId)!;
+};
+
+// Extract session ID from request
+const getSessionId = (request: NextRequest): string => {
+  // Try to get session ID from header
+  const sessionFromHeader = request.headers.get('x-session-id');
+  if (sessionFromHeader) return sessionFromHeader;
+  
+  // Try to get from URL params
+  const url = new URL(request.url);
+  const sessionFromParams = url.searchParams.get('sessionId');
+  if (sessionFromParams) return sessionFromParams;
+  
+  // Generate new session ID
+  const newSessionId = randomUUID();
+  console.log('[Session] Generated new session ID:', newSessionId);
+  return newSessionId;
+};
 
 interface Message {
   id: number;
@@ -44,10 +96,12 @@ class ChatMessage implements Message {
   }
 }
 
-async function createNode(message: string, customApiKey?: string): Promise<{ create: string; title: string | null }> {
+async function createNode(message: string, customApiKey?: string, sessionId?: string): Promise<{ create: string; title: string | null }> {
   try {
     console.log('[createNode] Calling decideCreateNode for message:', message);
-    const res = await decideCreateNode(message, Nodes, customApiKey);
+    // Get session-specific nodes for context
+    const { nodes } = sessionId ? getSessionStorage(sessionId) : { nodes: [] };
+    const res = await decideCreateNode(message, nodes, customApiKey);
     console.log('[createNode] decideCreateNode returned:', res);
     return { create: res.create ?? 'no', title: res.title ?? null };
   } catch (err) {
@@ -62,39 +116,41 @@ async function createNode(message: string, customApiKey?: string): Promise<{ cre
 async function addMessageToTree(
   messageContent: string,
   role: string,
+  sessionId: string,
   nodeId?: number,
   customApiKey?: string
 ): Promise<{ success: boolean; messageId: number; nodeId: number; error?: string }> {
   try {
-    const messageId = Messages.length + 1;
+    const { messages, nodes } = getSessionStorage(sessionId);
+    const messageId = messages.length + 1;
     let currNode: Node;
 
     // Find the target node or use the last node
     if (nodeId !== undefined && nodeId !== -1) {
-      const targetNode = Nodes.find(node => node.id === nodeId);
+      const targetNode = nodes.find(node => node.id === nodeId);
       if (!targetNode) {
         return { success: false, messageId: 0, nodeId: 0, error: 'Node not found' };
       }
       currNode = targetNode;
     } else {
-      if (Nodes.length === 0) {
+      if (nodes.length === 0) {
         // Create initial root node if none exists
         const initialNode = new ChatNode(0, "Root Node");
-        Nodes.push(initialNode);
+        nodes.push(initialNode);
         currNode = initialNode;
       } else {
-        currNode = Nodes[Nodes.length - 1];
+        currNode = nodes[nodes.length - 1];
       }
     }
 
     const newMessage = new ChatMessage(messageId, messageContent, role);
-    Messages.push(newMessage);
+    messages.push(newMessage);
 
     // Only decide to create new node for user messages, not bot responses
     if (role === 'user') {
       // If this is the first message to root node, update its title
       if (currNode.title === 'Root Node' && currNode.NodeMessages.length === 0) {
-        const { title } = await createNode(messageContent, customApiKey);
+        const { title } = await createNode(messageContent, customApiKey, sessionId);
         if (title) {
           currNode.title = title;
           console.log('[addMessageToTree] Updated root node title to:', title);
@@ -103,19 +159,19 @@ async function addMessageToTree(
         return { success: true, messageId, nodeId: currNode.id };
       }
       
-      const { create, title } = await createNode(messageContent, customApiKey);
+      const { create, title } = await createNode(messageContent, customApiKey, sessionId);
       console.log('[addMessageToTree] User message - create:', create, 'title:', title);
 
       if (create === 'no') {
         currNode.NodeMessages.push(newMessage);
         return { success: true, messageId, nodeId: currNode.id };
       } else {
-        const newNode = new ChatNode(Nodes.length, title || messageContent.substring(0, 20));
+        const newNode = new ChatNode(nodes.length, title || messageContent.substring(0, 20));
         console.log('[addMessageToTree] Creating new node:', newNode.id, newNode.title);
-        if (Nodes.length > 0) {
+        if (nodes.length > 0) {
           currNode.Children.push(newNode);
         }
-        Nodes.push(newNode);
+        nodes.push(newNode);
         newNode.NodeMessages.push(newMessage);
         return { success: true, messageId, nodeId: newNode.id };
       }
@@ -135,8 +191,9 @@ async function addMessageToTree(
   }
 }
 
-function getTreeVisualization() {
-  return Nodes.map(node => ({
+function getTreeVisualization(sessionId: string) {
+  const { nodes } = getSessionStorage(sessionId);
+  return nodes.map(node => ({
     nodeId: node.id,
     title: node.title,
     messages: node.NodeMessages.map(msg => ({
@@ -148,23 +205,28 @@ function getTreeVisualization() {
   }));
 }
 
-// Helper function to find a node by ID
-function findNodeById(nodeId: number, searchNodes: Node[] = Nodes): Node | null {
-  for (const node of searchNodes) {
+// Helper function to find a node by ID in session storage
+function findNodeById(nodeId: number, sessionId: string, searchNodes?: Node[]): Node | null {
+  const { nodes } = getSessionStorage(sessionId);
+  const nodesToSearch = searchNodes || nodes;
+  
+  for (const node of nodesToSearch) {
     if (node.id === nodeId) return node;
-    const found = findNodeById(nodeId, node.Children);
+    const found = findNodeById(nodeId, sessionId, node.Children);
     if (found) return found;
   }
   return null;
 }
 
-// Get path from root to a specific node
-function getPathToNode(targetNodeId: number): Node[] | null {
+// Get path from root to a specific node in session storage
+function getPathToNode(targetNodeId: number, sessionId: string): Node[] | null {
+  const { nodes } = getSessionStorage(sessionId);
+  
   // Build parent map
   const parentMap = new Map<number, number>();
   
-  function buildParentMap(nodes: Node[], parentId: number | null = null) {
-    for (const node of nodes) {
+  function buildParentMap(nodeList: Node[], parentId: number | null = null) {
+    for (const node of nodeList) {
       if (parentId !== null) {
         parentMap.set(node.id, parentId);
       }
@@ -172,10 +234,10 @@ function getPathToNode(targetNodeId: number): Node[] | null {
     }
   }
   
-  buildParentMap(Nodes);
+  buildParentMap(nodes);
   
   // Check if target node exists
-  const targetNode = findNodeById(targetNodeId);
+  const targetNode = findNodeById(targetNodeId, sessionId);
   if (!targetNode) return null;
   
   // Build path from target to root
@@ -183,7 +245,7 @@ function getPathToNode(targetNodeId: number): Node[] | null {
   let currentId: number | undefined = targetNodeId;
   
   while (currentId !== undefined) {
-    const node = findNodeById(currentId);
+    const node = findNodeById(currentId, sessionId);
     if (!node) break;
     path.unshift(node); // Add to beginning
     currentId = parentMap.get(currentId);
@@ -197,11 +259,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const pathNodeId = searchParams.get('pathTo');
+    const sessionId = getSessionId(request);
     
     // If pathTo parameter is provided, return path to that node
     if (pathNodeId) {
       const nodeId = parseInt(pathNodeId);
-      const path = getPathToNode(nodeId);
+      const path = getPathToNode(nodeId, sessionId);
       
       if (!path) {
         return NextResponse.json(
@@ -210,7 +273,7 @@ export async function GET(request: NextRequest) {
         );
       }
       
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         path: path.map(node => ({
           nodeId: node.id,
@@ -222,16 +285,27 @@ export async function GET(request: NextRequest) {
           }))
         }))
       });
+      
+      // Send session ID back to client
+      response.headers.set('x-session-id', sessionId);
+      return response;
     }
     
     // Default: return full tree
-    const treeData = getTreeVisualization();
-    return NextResponse.json({
+    const { messages, nodes } = getSessionStorage(sessionId);
+    const treeData = getTreeVisualization(sessionId);
+    
+    const response = NextResponse.json({
       success: true,
       nodes: treeData,
-      totalMessages: Messages.length,
-      totalNodes: Nodes.length
+      totalMessages: messages.length,
+      totalNodes: nodes.length,
+      sessionId: sessionId
     });
+    
+    // Send session ID back to client
+    response.headers.set('x-session-id', sessionId);
+    return response;
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Failed to retrieve tree data' },
@@ -245,6 +319,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { message, role, nodeId, generateAI, customApiKey } = body;
+    const sessionId = getSessionId(request);
 
     if (!message || !role) {
       return NextResponse.json(
@@ -253,7 +328,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await addMessageToTree(message, role, nodeId, customApiKey);
+    const result = await addMessageToTree(message, role, sessionId, nodeId, customApiKey);
     
     if (!result.success) {
       return NextResponse.json(
@@ -269,20 +344,22 @@ export async function POST(request: NextRequest) {
     // If user message and generateAI is true, get AI response
     if (role === 'user' && generateAI) {
       try {
-        const conversationHistory = Messages.map(msg => ({
+        const { messages } = getSessionStorage(sessionId);
+        const conversationHistory = messages.map(msg => ({
           role: msg.role,
           content: msg.content
         }));
         
         const aiText = await generateResponse(message, conversationHistory, customApiKey);
-        const aiResult = await addMessageToTree(aiText, 'bot', result.nodeId);
+        const aiResult = await addMessageToTree(aiText, 'bot', sessionId, result.nodeId);
         
         if (aiResult.success) {
           aiResponse = aiText;
           aiNodeId = aiResult.nodeId;
           
           // Get the node title (already set during node creation if create === 'yes')
-          const currentNode = Nodes.find(n => n.id === aiNodeId);
+          const { nodes } = getSessionStorage(sessionId);
+          const currentNode = nodes.find(n => n.id === aiNodeId);
           nodeTitle = currentNode?.title || null;
         } else {
           console.error('[POST] Failed to add bot message:', aiResult.error);
@@ -292,28 +369,36 @@ export async function POST(request: NextRequest) {
         
         // Check if it's a quota exhaustion error
         if (isQuotaExhaustedError(aiError)) {
-          return NextResponse.json({
+          const response = NextResponse.json({
             success: false,
             error: 'API quota exhausted',
             quotaExhausted: true,
             messageId: result.messageId,
-            nodeId: result.nodeId
+            nodeId: result.nodeId,
+            sessionId: sessionId
           }, { status: 429 });
+          
+          response.headers.set('x-session-id', sessionId);
+          return response;
         }
         
         // Return success for user message even if AI fails
         aiResponse = 'Sorry, I encountered an error generating a response.';
       }
     }
-      
-    return NextResponse.json({
+    
+    const response = NextResponse.json({
       success: true,
       messageId: result.messageId,
       nodeId: aiNodeId,
       aiResponse: aiResponse,
       nodeTitle: nodeTitle,
-      tree: getTreeVisualization()
+      tree: getTreeVisualization(sessionId),
+      sessionId: sessionId
     });
+    
+    response.headers.set('x-session-id', sessionId);
+    return response;
   } catch (error) {
     console.error('[POST] Error processing request:', error);
     return NextResponse.json(
@@ -323,16 +408,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - Reset the chat tree
-export async function DELETE() {
+// DELETE - Reset the chat tree for specific session
+export async function DELETE(request: NextRequest) {
   try {
-    Messages = [];
-    Nodes = [];
+    const sessionId = getSessionId(request);
     
-    return NextResponse.json({
+    // Clear session storage
+    const { messages, nodes } = getSessionStorage(sessionId);
+    messages.length = 0;
+    nodes.length = 0;
+    
+    const response = NextResponse.json({
       success: true,
-      message: 'Chat tree reset successfully'
+      message: 'Chat tree reset successfully',
+      sessionId: sessionId
     });
+    
+    response.headers.set('x-session-id', sessionId);
+    return response;
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Failed to reset chat tree' },
@@ -341,22 +434,29 @@ export async function DELETE() {
   }
 }
 
-// PUT - Initialize chat with root node
-export async function PUT() {
+// PUT - Initialize chat with root node for specific session
+export async function PUT(request: NextRequest) {
   try {
-    // Reset and create initial node
-    Messages = [];
-    Nodes = [];
+    const sessionId = getSessionId(request);
+    
+    // Reset and create initial node for this session
+    const { messages, nodes } = getSessionStorage(sessionId);
+    messages.length = 0;
+    nodes.length = 0;
     
     const initialNode = new ChatNode(0, "Root Node");
-    Nodes.push(initialNode);
+    nodes.push(initialNode);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Chat initialized with root node',
       rootNodeId: initialNode.id,
-      tree: getTreeVisualization()
+      tree: getTreeVisualization(sessionId),
+      sessionId: sessionId
     });
+    
+    response.headers.set('x-session-id', sessionId);
+    return response;
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Failed to initialize chat' },
