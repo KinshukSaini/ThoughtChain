@@ -223,6 +223,81 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Getting Started */}
+        <section className="py-20 md:py-32 bg-gradient-to-br from-[#a855f7]/5 via-transparent to-transparent border-y border-white/5">
+          <div className="container mx-auto px-6 max-w-4xl">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Get Started in <span className="text-[#a855f7]">2 Minutes</span>
+              </h2>
+              <p className="text-xl text-[#a1a1aa]">
+                ThoughtChain uses your personal Gemini API key for privacy and control
+              </p>
+            </div>
+            
+            <div className="bg-gradient-to-br from-white/10 to-white/[0.02] border border-white/10 rounded-3xl p-10 max-w-2xl mx-auto">
+              <div className="flex items-start gap-6 mb-8">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#a855f7] text-lg font-bold text-white shadow-lg shadow-[#a855f7]/30">
+                  1
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-3">Get Your Free API Key</h3>
+                  <p className="text-[#a1a1aa] mb-3">
+                    Visit Google AI Studio and generate your free Gemini API key in seconds.
+                  </p>
+                  <a 
+                    href="https://aistudio.google.com/apikey" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[#a855f7] hover:text-[#c084fc] font-semibold transition-colors"
+                  >
+                    Get API Key
+                    <ArrowRight className="size-4" />
+                  </a>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-6 mb-8">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#a855f7] text-lg font-bold text-white shadow-lg shadow-[#a855f7]/30">
+                  2
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-3">Enter It Once</h3>
+                  <p className="text-[#a1a1aa]">
+                    Paste your API key when you first launch ThoughtChain. It's stored securely in your browser.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-6">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#a855f7] text-lg font-bold text-white shadow-lg shadow-[#a855f7]/30">
+                  3
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-3">Start Learning</h3>
+                  <p className="text-[#a1a1aa]">
+                    Begin your structured learning journey with full control and privacy.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-8 pt-8 border-t border-white/10">
+                <div className="flex items-start gap-3">
+                  <svg className="size-5 text-[#a855f7] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm text-[#d4d4d8] font-semibold mb-1">Your Privacy Matters</p>
+                    <p className="text-sm text-[#a1a1aa]">
+                      Your API key is stored only in your browser's local storage. We never see it or store it on our servers.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Key Features */}
         <section className="py-20 md:py-32">
           <div className="container mx-auto px-6 max-w-6xl">
@@ -295,12 +370,17 @@ export default function LandingPage() {
                 Start Navigating Your Thoughts.
               </span>
             </h2>
-            <div className="space-y-3 mb-12">
+            <div className="space-y-3 mb-8">
               <p className="text-xl md:text-2xl text-[#d4d4d8]">
                 Study with clarity, structure, and control.
               </p>
               <p className="text-xl md:text-2xl text-[#d4d4d8]">
                 Build your knowledge — one branch at a time.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-10">
+              <p className="text-sm text-[#a1a1aa]">
+                Free to use with your Gemini API key
               </p>
             </div>
             <Link href="/chat">
