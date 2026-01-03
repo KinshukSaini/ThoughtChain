@@ -150,6 +150,10 @@ const ChatPage = () => {
           setSessionId(data.sessionId);
           localStorage.setItem('thoughtchain-session-id', data.sessionId);
         }
+        // Refresh tree to show the root node
+        if ((window as any).refreshTree) {
+          (window as any).refreshTree();
+        }
       }
     } catch (error) {
       console.error('Failed to initialize chat:', error);
