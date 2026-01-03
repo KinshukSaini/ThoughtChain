@@ -318,7 +318,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, role, nodeId, generateAI, customApiKey } = body;
+    const { message, role, nodeId, generateAI, customApiKey, retryAIOnly } = body;
     const sessionId = getSessionId(request);
 
     if (!message || !role) {
@@ -328,13 +328,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await addMessageToTree(message, role, sessionId, nodeId, customApiKey);
+    let result;
     
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Failed to add message' },
-        { status: 400 }
-      );
+    // If retryAIOnly is true, skip adding user message (already added on previous attempt)
+    if (retryAIOnly && role === 'user') {
+      // Use the existing nodeId - user message was already stored
+      result = { success: true, messageId: 0, nodeId: nodeId };
+    } else {
+      result = await addMessageToTree(message, role, sessionId, nodeId, customApiKey);
+      
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error || 'Failed to add message' },
+          { status: 400 }
+        );
+      }
     }
     
     let aiResponse = null;

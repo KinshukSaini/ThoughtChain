@@ -292,7 +292,8 @@ const ChatPage = () => {
             role: 'user',
             nodeId: currentNodeId,
             generateAI: true,
-            customApiKey: apiKey
+            customApiKey: apiKey,
+            retryAIOnly: true  // Skip adding user message since it was already added
           })
         });
 
