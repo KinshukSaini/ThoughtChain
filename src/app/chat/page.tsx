@@ -31,7 +31,7 @@ const ChatPage = () => {
   const [activeView, setActiveView] = useState<'chat' | 'graph'>('chat');
   const [isLargeScreen, setIsLargeScreen] = useState(true);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<{ content: string; files?: File[] } | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<{ content: string } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   // Get or create session ID
@@ -182,23 +182,14 @@ const ChatPage = () => {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const handleSendMessage = async (content: string, files?: File[]) => {
-    if (!content.trim() && (!files || files.length === 0)) return;
-    
-    const fileData = files?.map(file => ({
-      name: file.name,
-      type: file.type,
-      size: file.size
-    }));
-
-    const messageContent = content.trim() || '📎 Uploaded files';
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return;
 
     // Add user message immediately with unique ID
     const userMessage: Message = {
       id: getUniqueId(),
       role: 'user',
-      content: messageContent,
-      files: fileData,
+      content: content.trim(),
       nodeId: currentNodeId
     };
     
@@ -216,7 +207,7 @@ const ChatPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: messageContent,
+          message: content.trim(),
           role: 'user',
           nodeId: currentNodeId,
           generateAI: true,
@@ -229,7 +220,7 @@ const ChatPage = () => {
       // Check for quota exhaustion
       if (data.quotaExhausted) {
         // Store the pending message for retry after API key is added
-        setPendingMessage({ content: messageContent, files });
+        setPendingMessage({ content: content.trim() });
         setShowApiKeyModal(true);
         setIsLoading(false);
         return;
@@ -265,11 +256,6 @@ const ChatPage = () => {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-    }
-
-    // Log files for debugging
-    if (files && files.length > 0) {
-      console.log('Uploaded files:', files);
     }
   };
 
@@ -393,7 +379,7 @@ const ChatPage = () => {
         </div>
         
         {/* Message space with bottom padding for fixed input */}
-        <div className="flex-1 overflow-y-auto text-[#f5f5f5] flex flex-col-reverse pb-48 lg:pb-0">
+        <div className="flex-1 overflow-y-auto text-[#f5f5f5] flex flex-col-reverse pb-48 lg:pb-0 scrollbar-thin scrollbar-thumb-[#29292b] scrollbar-track-[#0f0f10] hover:scrollbar-thumb-[#a855f7]/50">
           {isLoading && (
             <div className='flex justify-start m-2'>
               <div className='text-white p-4 rounded-lg'>
