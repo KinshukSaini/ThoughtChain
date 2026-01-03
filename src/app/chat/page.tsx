@@ -29,7 +29,7 @@ const ChatPage = () => {
   const [currentNodeId, setCurrentNodeId] = useState<number>(0);
   const messageRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
   const [activeView, setActiveView] = useState<'chat' | 'graph'>('chat');
-  const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+  const [isLargeScreen, setIsLargeScreen] = useState(true);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<{ content: string; files?: File[] } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -76,6 +76,9 @@ const ChatPage = () => {
 
   // Handle screen resize
   useEffect(() => {
+    // Set initial value after mount to avoid hydration mismatch
+    setIsLargeScreen(window.innerWidth >= 1024);
+    
     const handleResize = () => {
       setIsLargeScreen(window.innerWidth >= 1024);
     };
@@ -378,18 +381,18 @@ const ChatPage = () => {
 
       {/* Chat Container*/}
       <div 
-        className={`rounded-3xl overflow-hidden bg-[#0f0f10] flex-col px-2 sm:px-4 md:px-8 lg:px-32 ${
+        className={`rounded-3xl overflow-hidden bg-[#0f0f10] px-2 sm:px-4 md:px-8 lg:px-32 ${
           activeView === 'chat' ? 'flex' : 'hidden'
-        } lg:flex`} 
+        } lg:flex flex-col relative h-screen lg:h-auto`} 
         style={{ width: isLargeScreen ? `${chatWidth}%` : '100%' }}
       >
         {/* Header */}
-        <div className='text-left text-2xl sm:text-3xl font-semibold bg-[#0f0f10] p-5 bg-linear-to-r from-[#a855f7] to-[#c084fc] bg-clip-text text-transparent border-b border-white/5'>
+        <div className='text-left text-2xl sm:text-3xl font-semibold bg-[#0f0f10] p-5 bg-linear-to-r from-[#a855f7] to-[#c084fc] bg-clip-text text-transparent border-b border-white/5 flex-shrink-0'>
           ThoughtChain
         </div>
         
-        {/* Message space */}
-        <div className="flex-1 overflow-y-auto text-[#f5f5f5] flex flex-col-reverse">
+        {/* Message space with bottom padding for fixed input */}
+        <div className="flex-1 overflow-y-auto text-[#f5f5f5] flex flex-col-reverse pb-48 lg:pb-0">
           {isLoading && (
             <div className='flex justify-start m-2'>
               <div className='text-white p-4 rounded-lg'>
@@ -404,8 +407,8 @@ const ChatPage = () => {
           <MessageSection messages={messages} messageRefs={messageRefs} />    
         </div>
         
-        {/* Input at bottom */}
-        <div className='flex justify-center items-center'>
+        {/* Input at bottom - Fixed on mobile, static on desktop */}
+        <div className='fixed lg:relative bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto flex justify-center items-center bg-[#0f0f10] lg:bg-transparent p-4 lg:p-0 z-40 flex-shrink-0'>
           <InputBox onSendMessage={handleSendMessage} />
         </div>
       </div>

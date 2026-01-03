@@ -19,11 +19,11 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden pt-52 pb-48 md:pt-56 md:pb-52">
+        <section className="relative overflow-hidden pt-36 pb-36 sm:pt-52 sm:pb-48 md:pt-56 md:pb-52">
           <div className="absolute inset-0 pointer-events-none" />
           <div className="container mx-auto px-6 text-center max-w-5xl relative z-10">
             
-            <h1 className="text-5xl font-bold tracking-tight md:text-7xl mb-8 leading-tight">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight md:text-7xl mb-8 leading-tight">
               Study Without Losing Your{" "}
               <span className="bg-linear-to-r from-[#a855f7] to-[#c084fc] bg-clip-text text-transparent">
                 Train of Thought
