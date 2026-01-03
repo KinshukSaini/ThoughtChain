@@ -1,10 +1,10 @@
-# ThoughtChain 🌳
+# ThoughtChain
 
 > **Study Without Losing Your Train of Thought**
 
 An AI-powered study assistant that visualizes your learning conversations as an interactive tree of thoughts. Built with Next.js, TypeScript, and Google's Gemini AI.
 
-## 🎯 The Problem
+## The Problem
 
 When studying with AI chatbots:
 - One question leads to another
@@ -14,21 +14,21 @@ When studying with AI chatbots:
 
 **ThoughtChain solves this** by letting you move up or dive deeper into context levels, instead of drowning in one long, messy chat.
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---------|-------------|
-| 🤖 **AI Study Assistant** | Chat with Gemini 2.5 Flash for exam preparation |
-| 🌳 **Tree Visualization** | See your conversations organized as an interactive mind map |
-| 🔄 **Smart Branching** | AI automatically creates nodes for different topics |
-| 📊 **Interactive Graph** | Click nodes to view and resume from any conversation point |
-| 📁 **File Upload** | Share study materials with the AI |
-| ✨ **Markdown Support** | Rich text formatting with syntax highlighting |
-| 🎨 **Dark Theme** | Easy on the eyes for long study sessions |
-| 🔐 **API Key Modal** | Securely input your own Gemini API key |
-| 📱 **Responsive Design** | Toggle between chat and graph view on mobile |
+| **AI Study Assistant** | Chat with Gemini 2.5 Flash for exam preparation |
+| **Tree Visualization** | See your conversations organized as an interactive mind map |
+| **Smart Branching** | AI automatically creates nodes for different topics |
+| **Interactive Graph** | Click nodes to view and resume from any conversation point |
+| **File Upload** | Share study materials with the AI |
+| **Markdown Support** | Rich text formatting with syntax highlighting |
+| **Dark Theme** | Easy on the eyes for long study sessions |
+| **API Key Modal** | Securely input your own Gemini API key |
+| **Responsive Design** | Toggle between chat and graph view on mobile |
 
-## 🖼️ Demo
+## Demo
 
 <!-- Add screenshots or GIFs here -->
 ```
@@ -48,7 +48,7 @@ When studying with AI chatbots:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Technology | Purpose |
 |------------|---------|
@@ -60,7 +60,7 @@ When studying with AI chatbots:
 | **ReactFlow** | Interactive node-based visualization |
 | **Lucide React** | Beautiful icons |
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -104,7 +104,7 @@ pnpm dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ThoughtChain/
@@ -131,7 +131,7 @@ ThoughtChain/
 └── tsconfig.json
 ```
 
-## 🔌 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -142,7 +142,7 @@ ThoughtChain/
 | `DELETE` | `/api/bot` | Reset the entire chat tree |
 | `POST` | `/api/bot/response` | Streaming response endpoint |
 
-## 🧠 How It Works
+## How It Works
 
 ```mermaid
 graph TD
@@ -162,34 +162,34 @@ graph TD
 4. **Visualization**: ReactFlow renders the tree structure in real-time
 5. **Navigation**: Users can click any node to view its conversation path and continue from there
 
-## 🎮 Key Features Explained
+## Key Features Explained
 
-### 🌿 Automatic Node Creation
+### Automatic Node Creation
 
 The AI uses a specialized prompt to analyze user messages and decide whether to:
-- ✅ Continue in the current node (same topic)
-- ✅ Create a new branch for a different topic
-- ✅ Generate meaningful titles for new nodes
+- Continue in the current node (same topic)
+- Create a new branch for a different topic
+- Generate meaningful titles for new nodes
 
-### 🧭 Path Navigation
+### Path Navigation
 
 Click any node in the tree to:
-- 📍 Load the complete conversation path from root to that node
-- 💬 Continue the conversation from that context
-- 🔄 Maintain conversation coherence
+- Load the complete conversation path from root to that node
+- Continue the conversation from that context
+- Maintain conversation coherence
 
-### 📐 Resizable Layout
+### Resizable Layout
 
 - Drag the divider between chat and tree view to adjust your workspace
 - On mobile: Toggle between chat and graph views
 
-### 🔑 Session Management
+### Session Management
 
 - Sessions are automatically created and persisted
 - Your conversation tree is maintained across page refreshes
 - Each session has a unique ID stored in localStorage
 
-## ⚙️ Configuration
+## Configuration
 
 ### AI Model
 
@@ -214,7 +214,7 @@ Customize the theme in:
 |----------|-------------|----------|
 | `GEMINI_API_KEY` | Your Google Gemini API key | Yes (or use in-app modal) |
 
-## 📚 Learn More
+## Learn More
 
 - [Next.js Documentation](https://nextjs.org/docs) - Next.js features and API
 - [Google AI SDK](https://ai.google.dev/docs) - Gemini API documentation
@@ -222,7 +222,7 @@ Customize the theme in:
 - [ReactFlow Documentation](https://reactflow.dev/) - Node-based UI library
 - [Tailwind CSS](https://tailwindcss.com/docs) - Utility-first CSS
 
-## 🚀 Deploy on Vercel
+## Deploy on Vercel
 
 The easiest way to deploy ThoughtChain is using the [Vercel Platform](https://vercel.com/new):
 
@@ -235,7 +235,7 @@ The easiest way to deploy ThoughtChain is using the [Vercel Platform](https://ve
 
 Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Here's how you can help:
 
@@ -245,12 +245,12 @@ Contributions are welcome! Here's how you can help:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 MIT License - feel free to use this project for your studies!
 
 ---
 
 <p align="center">
-  Made with ❤️ for students who want to study smarter, not harder.
+  Made for students who want to study smarter, not harder.
 </p>
