@@ -93,7 +93,7 @@ export default function LandingPage() {
 
               {/* Right Hero Graphic */}
               <motion.div
-                className="flex-1 relative w-full max-w-lg mx-auto lg:max-w-none lg:w-auto h-[350px] md:h-[450px]"
+                className="flex-1 relative w-full max-w-lg mx-auto lg:max-w-none lg:w-auto h-[350px] md:h-[450px] mt-8 lg:mt-0"
                 initial={{ opacity: 0, scale: 0.9, rotateX: 10 }}
                 animate={{ opacity: 1, scale: 1, rotateX: 0 }}
                 transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
@@ -147,7 +147,7 @@ export default function LandingPage() {
                   <motion.div
                     animate={{ y: [-8, 8, -8] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[20%] left-[15%] w-36 p-4 bg-[#111111] border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col gap-3 z-20"
+                    className="absolute top-[20%] left-[15%] w-28 md:w-36 p-3 md:p-4 bg-[#111111] border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col gap-3 z-20 scale-90 md:scale-100"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className="size-2 rounded-full bg-white/50" />
@@ -160,7 +160,7 @@ export default function LandingPage() {
                   <motion.div
                     animate={{ y: [10, -10, 10] }}
                     transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute top-[45%] right-[5%] w-44 p-5 bg-[#1a0f2e] border border-[#a855f7]/40 rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.2)] flex flex-col gap-3 z-20 scale-110"
+                    className="absolute top-[45%] right-[5%] w-32 md:w-44 p-3 md:p-5 bg-[#1a0f2e] border border-[#a855f7]/40 rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.2)] flex flex-col gap-3 z-20 scale-90 md:scale-110"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className="size-2.5 rounded-full bg-[#c084fc] shadow-[0_0_8px_#c084fc]" />
@@ -174,7 +174,7 @@ export default function LandingPage() {
                   <motion.div
                     animate={{ y: [-6, 6, -6], x: [-3, 3, -3] }}
                     transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                    className="absolute bottom-[10%] left-[30%] w-40 p-4 bg-[#111111] border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col gap-3 z-10 opacity-80"
+                    className="absolute bottom-[10%] left-[30%] w-32 md:w-40 p-3 md:p-4 bg-[#111111] border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col gap-3 z-10 opacity-80 scale-90 md:scale-100"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className="size-2 rounded-full bg-white/30" />
